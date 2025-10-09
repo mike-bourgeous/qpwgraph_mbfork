@@ -1971,7 +1971,7 @@ void qpwgraph_canvas::arrangeNodes (void)
 	}
 
 	qpwgraph_toposort topo(m_nodes);
-	auto newPositions = topo.arrange();
+	auto newPositions = topo.arrange(QGraphicsView::viewport()->size());
 
 	qpwgraph_move_command *mc = new qpwgraph_move_command(this, newPositions);
 

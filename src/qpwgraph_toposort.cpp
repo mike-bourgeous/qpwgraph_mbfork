@@ -46,14 +46,16 @@ qpwgraph_toposort::qpwgraph_toposort ( const QList<qpwgraph_node *>& nodes )
 // in the graph from a source node.
 //
 // Returns a Map from node pointer to position, without modifying the nodes.
-const QHash<qpwgraph_node *, QPointF>& qpwgraph_toposort::arrange (void)
+const QHash<qpwgraph_node *, QPointF>& qpwgraph_toposort::arrange (QSize viewportSize)
 {
 	// Sort nodes topologically, using heuristics to break cycles.
 	rankAndSort();
 
 	// Precompute and store information used during arrangement.
 	QMap<int, QList<qpwgraph_node *>> rankNodes;
-	QMap<int, float> rankMaxWidth;
+	QMap<int, qreal> rankMaxWidth;
+	qreal xmin = std::numeric_limits<double>::infinity();
+	qreal ymin = std::numeric_limits<double>::infinity();
 	int maxRank = 0;
 	foreach (qpwgraph_node *n, m_inputNodes) {
 		int rank = m_nodeRanks[n];
@@ -68,12 +70,20 @@ const QHash<qpwgraph_node *, QPointF>& qpwgraph_toposort::arrange (void)
 		rankMaxWidth[rank] = qMax(rankMaxWidth[rank], n->boundingRect().width());
 
 		maxRank = qMax(maxRank, rank);
+
+		xmin = qMin(xmin, n->pos().x());
+		ymin = qMin(ymin, n->pos().y());
+	}
+
+	// Calculate total space required for all columns plus margins, for
+	// expanding to fill viewport width.
+	qreal totalColumnWidths = 80;
+	foreach (qreal w, rankMaxWidth) {
+		totalColumnWidths += w;
 	}
 
 	// Place nodes based on topological sort
-	// TODO: expand graph to fill width of window if it's smaller?
-	const qreal xmin = 20, ymin = 20;
-	const qreal xpad = 120;
+	const qreal xpad = qMax(120.0, (viewportSize.width() - totalColumnWidths) / (rankMaxWidth.size() - 1));
 	const qreal ypad = 40;
 	qreal x = xmin, y = ymin;
 	int current_rank = m_nodeRanks[m_inputNodes.first()];
